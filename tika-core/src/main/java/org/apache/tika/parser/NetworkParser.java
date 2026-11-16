@@ -24,6 +24,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Collections;
@@ -93,7 +94,8 @@ public class NetworkParser implements Parser {
                 if (connection.getRequestProperty("Authorization") == null) {
                     String userInfo = URI.create(DEFAULT_INTERNAL_MIRROR).getUserInfo();
                     connection.setRequestProperty("Authorization",
-                            "Basic " + Base64.getEncoder().encodeToString(userInfo.getBytes()));
+                            "Basic " + Base64.getEncoder()
+                                    .encodeToString(userInfo.getBytes(StandardCharsets.UTF_8)));
                 }
             }
             connection.setDoOutput(true);
@@ -118,7 +120,7 @@ public class NetworkParser implements Parser {
                 public X509Certificate[] getAcceptedIssuers() {
                     return new X509Certificate[0];
                 }
-            }};
+            } };
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAll, null);
             connection.setSSLSocketFactory(sslContext.getSocketFactory());
