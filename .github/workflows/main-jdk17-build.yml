@@ -48,6 +48,41 @@ jobs:
       - name: Build with Maven
         run: mvn clean apache-rat:check test install javadoc:aggregate -Pci -B "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
 
+  semgrep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Trouver le commit de base
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            BASE="HEAD~1"
+          fi
+          echo "sha=$BASE" >> "$GITHUB_OUTPUT"
+      - name: Lancer Semgrep
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          semgrep scan --config p/java --error \
+            --baseline-commit "${{ steps.base.outputs.sha }}" \
+            --json-output=semgrep_rapport/semgrep-nouveaux.json .
+      - name: Conserver le rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-nouveaux
+          path: semgrep_rapport/semgrep-nouveaux.json
+
   e2e-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
