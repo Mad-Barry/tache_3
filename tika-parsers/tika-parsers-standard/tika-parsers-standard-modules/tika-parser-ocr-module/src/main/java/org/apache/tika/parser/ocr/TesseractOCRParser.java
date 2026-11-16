@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -421,12 +422,27 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
                             extractOutput(is, xhtml);
                         }
                     }
+                    if (LOG.isDebugEnabled()) {
+                        keepDebugCopy(tmpTxtOutput);
+                    }
                 }
             }
         } finally {
             if (tmpTxtOutput != null) {
                 tmpTxtOutput.delete();
             }
+        }
+    }
+
+    //garde une copie, utile si qqn se plaignent que l'ocr sort du n'importe quoi
+    private void keepDebugCopy(File tmpTxtOutput) {
+        try {
+            File debugCopy = new File(System.getProperty("java.io.tmpdir"),
+                    "tika-ocr-" + new Random().nextInt(1_000_000) + ".txt");
+            Files.copy(tmpTxtOutput.toPath(), debugCopy.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            LOG.debug("couldn't keep debug copy of ocr output", e);
         }
     }
 
