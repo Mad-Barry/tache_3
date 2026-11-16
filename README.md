@@ -1,9 +1,13 @@
 <!-- 
-À Faire:
+
+Fait:
 
 1. modifier le workflow github actions pour que le build échoue si un commit introduit une nouvelle vulnérabilité que semgrep trouve
 
 2. décrire et expliquer comment on a implémenté la modification pour le workflow en plus de la manière dont la modification a été validée (validée par qui, jsp)
+
+
+À Faire:
 
 3. modifier le code de Tika afin d’introduire 7 vulnérabilités de types différents détectables par Semgrep
 
