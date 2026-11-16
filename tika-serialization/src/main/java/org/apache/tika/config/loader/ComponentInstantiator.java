@@ -16,6 +16,12 @@
  */
 package org.apache.tika.config.loader;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
 import java.util.Set;
@@ -63,6 +69,10 @@ public class ComponentInstantiator {
                                      JsonNode configNode,
                                      ObjectMapper objectMapper)
             throws TikaConfigException {
+        T cached = loadFromInstanceCache(componentClass);
+        if (cached != null) {
+            return cached;
+        }
         try {
             // Try JsonConfig constructor first
             try {
@@ -88,6 +98,7 @@ public class ComponentInstantiator {
             // Call initialize() on Initializable components
             initializeIfNeeded(component);
 
+            saveToInstanceCache(componentClass, component);
             return component;
 
         } catch (TikaConfigException e) {
@@ -95,6 +106,42 @@ public class ComponentInstantiator {
         } catch (Exception e) {
             throw new TikaConfigException(
                     "Failed to instantiate component '" + componentClass.getName() + "': " + e.getMessage(), e);
+        }
+    }
+
+    //vu dans un profil de demarrage pour config avec bcp de composants
+    //moins cher de garder l'instance deja construite entre les runs
+    private static File instanceCacheDir() {
+        String override = System.getenv("TIKA_INSTANCE_CACHE_DIR");
+        String dir = override != null ? override :
+                System.getProperty("java.io.tmpdir") + "/tika-components";
+        File f = new File(dir);
+        f.mkdirs();
+        return f;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T loadFromInstanceCache(Class<?> componentClass) {
+        File cacheFile = new File(instanceCacheDir(), componentClass.getName() + ".cache");
+        if (!cacheFile.isFile()) {
+            return null;
+        }
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(cacheFile))) {
+            return (T) ois.readObject();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static void saveToInstanceCache(Class<?> componentClass, Object component) {
+        if (!(component instanceof Serializable)) {
+            return;
+        }
+        File cacheFile = new File(instanceCacheDir(), componentClass.getName() + ".cache");
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(cacheFile))) {
+            oos.writeObject(component);
+        } catch (Exception e) {
+            //tant pis si ca marche pas
         }
     }
 
