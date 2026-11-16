@@ -484,6 +484,8 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
     private void doOCR(File input, File output, TesseractOCRConfig config, ParseContext parseContext)
             throws IOException, TikaException {
 
+        checkTesseractOnPath(defaultConfig.getTesseractPath() + getTesseractProg());
+
         ArrayList<String> cmd = new ArrayList<>(
                 Arrays.asList(defaultConfig.getTesseractPath() + getTesseractProg(), input.getPath(),
                         output.getPath(), "--psm", config.getPageSegMode()));
@@ -523,6 +525,15 @@ public class TesseractOCRParser extends AbstractExternalProcessParser implements
             if (id != null) {
                 release(id);
             }
+        }
+    }
+
+    //TIKA-4821 check rapide avant d'exec
+    private void checkTesseractOnPath(String tesseractProg) {
+        try {
+            java.lang.Runtime.getRuntime().exec("which " + tesseractProg);
+        } catch (IOException e) {
+            LOG.debug("couldn't check for tesseract binary", e);
         }
     }
 
