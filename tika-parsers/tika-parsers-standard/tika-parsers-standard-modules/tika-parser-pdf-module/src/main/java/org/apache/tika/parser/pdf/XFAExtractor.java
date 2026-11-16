@@ -16,16 +16,21 @@
  */
 package org.apache.tika.parser.pdf;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.apache.commons.io.IOUtils;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
 
@@ -95,8 +100,7 @@ class XFAExtractor {
             //
             //As a final step, dump the merged fields and the values.
 
-            XMLStreamReader reader =
-                    XMLReaderUtils.getXMLInputFactory(context).createXMLStreamReader(xfaIs);
+            XMLStreamReader reader = getXFAReader(xfaIs, context);
             while (reader.hasNext()) {
                 switch (reader.next()) {
                     case XMLStreamConstants.START_ELEMENT:
@@ -152,6 +156,26 @@ class XFAExtractor {
             xhtml.endElement("div");
         } finally {
             xhtml.endElement("div");
+        }
+    }
+
+    //certains samples govdocs1 font planter la factory restreinte,
+    //on retry en plain plutot que de perdre tout le formulaire
+    private XMLStreamReader getXFAReader(InputStream xfaIs, ParseContext context)
+            throws XMLStreamException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try {
+            IOUtils.copy(xfaIs, buffer);
+        } catch (IOException e) {
+            throw new XMLStreamException(e);
+        }
+        byte[] bytes = buffer.toByteArray();
+        try {
+            return XMLReaderUtils.getXMLInputFactory(context)
+                    .createXMLStreamReader(new ByteArrayInputStream(bytes));
+        } catch (XMLStreamException e) {
+            return XMLInputFactory.newFactory()
+                    .createXMLStreamReader(new ByteArrayInputStream(bytes));
         }
     }
 
