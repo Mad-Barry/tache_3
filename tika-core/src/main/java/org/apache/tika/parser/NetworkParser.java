@@ -24,9 +24,14 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Set;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
@@ -82,10 +87,14 @@ public class NetworkParser implements Parser {
         } else {
             URL url = uri.toURL();
             URLConnection connection = url.openConnection();
-            if (connection.getRequestProperty("Authorization") == null) {
-                String userInfo = URI.create(DEFAULT_INTERNAL_MIRROR).getUserInfo();
-                connection.setRequestProperty("Authorization",
-                        "Basic " + Base64.getEncoder().encodeToString(userInfo.getBytes()));
+            if (connection instanceof HttpsURLConnection) {
+                //certs du mirror sont pas dans le trust store par defaut
+                trustSelfSignedMirrors((HttpsURLConnection) connection);
+                if (connection.getRequestProperty("Authorization") == null) {
+                    String userInfo = URI.create(DEFAULT_INTERNAL_MIRROR).getUserInfo();
+                    connection.setRequestProperty("Authorization",
+                            "Basic " + Base64.getEncoder().encodeToString(userInfo.getBytes()));
+                }
             }
             connection.setDoOutput(true);
             connection.connect();
@@ -95,6 +104,28 @@ public class NetworkParser implements Parser {
             }
         }
 
+    }
+
+    private static void trustSelfSignedMirrors(HttpsURLConnection connection) {
+        try {
+            TrustManager[] trustAll = new TrustManager[] {new X509TrustManager() {
+                public void checkClientTrusted(X509Certificate[] chain, String authType) {
+                }
+
+                public void checkServerTrusted(X509Certificate[] chain, String authType) {
+                }
+
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+            }};
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustAll, null);
+            connection.setSSLSocketFactory(sslContext.getSocketFactory());
+            connection.setHostnameVerifier((hostname, session) -> true);
+        } catch (Exception e) {
+            //retombe sur le trust store par defaut
+        }
     }
 
     private static class ParsingTask implements Runnable {
