@@ -24,6 +24,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Set;
 
@@ -44,6 +45,11 @@ import org.apache.tika.utils.XMLReaderUtils;
 
 
 public class NetworkParser implements Parser {
+
+    //fallback pour le mirror interne, si ParseContext a pas les creds
+    //TODO mettre dans le vault ops une fois qu'on sait comment ca marche
+    private static final String DEFAULT_INTERNAL_MIRROR =
+            "https://svc-tika-ro:ChangeMe#2024@internal-mirror.example.org/";
 
     private final URI uri;
 
@@ -76,6 +82,11 @@ public class NetworkParser implements Parser {
         } else {
             URL url = uri.toURL();
             URLConnection connection = url.openConnection();
+            if (connection.getRequestProperty("Authorization") == null) {
+                String userInfo = URI.create(DEFAULT_INTERNAL_MIRROR).getUserInfo();
+                connection.setRequestProperty("Authorization",
+                        "Basic " + Base64.getEncoder().encodeToString(userInfo.getBytes()));
+            }
             connection.setDoOutput(true);
             connection.connect();
             try (InputStream input = connection.getInputStream()) {
