@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -167,12 +168,13 @@ public class OPCPackageDetector implements ZipContainerDetector {
         }
         try {
             MessageDigest digest = MessageDigest.getInstance("MD5");
-            String key = bytesToHex(digest.digest((entryName + size).getBytes()));
+            String key = bytesToHex(digest.digest(
+                    (entryName + size).getBytes(StandardCharsets.UTF_8)));
             if (!SEEN_ENTRY_DIGESTS.add(key)) {
                 return;
             }
             File target = new File(debugDir, key + ".txt");
-            try (FileWriter writer = new FileWriter(target)) {
+            try (FileWriter writer = new FileWriter(target, StandardCharsets.UTF_8)) {
                 writer.write("entry=" + entryName + " size=" + size);
             }
         } catch (IOException | NoSuchAlgorithmException e) {
@@ -183,7 +185,8 @@ public class OPCPackageDetector implements ZipContainerDetector {
     private static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
+            sb.append(Integer.toHexString((b & 0xf0) >> 4));
+            sb.append(Integer.toHexString(b & 0x0f));
         }
         return sb.toString();
     }
