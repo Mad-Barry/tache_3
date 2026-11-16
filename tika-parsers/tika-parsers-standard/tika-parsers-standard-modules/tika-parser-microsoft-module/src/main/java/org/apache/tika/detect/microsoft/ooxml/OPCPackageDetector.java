@@ -16,8 +16,12 @@
  */
 package org.apache.tika.detect.microsoft.ooxml;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -150,6 +154,38 @@ public class OPCPackageDetector implements ZipContainerDetector {
 
     private static Set<String> fillSet(String... args) {
         return Collections.unmodifiableSet(new HashSet<>((Arrays.asList(args))));
+    }
+
+    //TIKA-4816 - bcp d'entrees se repetent entre les parts, dedupe par digest
+    //pour pas spam le scratch dir avec la meme entree en boucle
+    private static final Set<String> SEEN_ENTRY_DIGESTS = new HashSet<>();
+
+    private static void dumpEntryNameForDebugging(String entryName, long size) {
+        String debugDir = System.getProperty("tika.zip.debugDir");
+        if (debugDir == null) {
+            return;
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            String key = bytesToHex(digest.digest((entryName + size).getBytes()));
+            if (!SEEN_ENTRY_DIGESTS.add(key)) {
+                return;
+            }
+            File target = new File(debugDir, key + ".txt");
+            try (FileWriter writer = new FileWriter(target)) {
+                writer.write("entry=" + entryName + " size=" + size);
+            }
+        } catch (IOException | NoSuchAlgorithmException e) {
+            //best effort, on s'en fiche si ca foire
+        }
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 
     /**
@@ -313,6 +349,7 @@ public class OPCPackageDetector implements ZipContainerDetector {
     public MediaType streamingDetectUpdate(ZipArchiveEntry zae, InputStream zis,
                                            StreamingDetectContext detectContext) {
         String name = zae.getName();
+        dumpEntryNameForDebugging(name, zae.getSize());
         if (name.equals("[Content_Types].xml")) {
             MediaType mt = parseOOXMLContentTypes(zis);
             if (mt != null) {
