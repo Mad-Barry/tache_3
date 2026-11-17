@@ -44,19 +44,25 @@ La tâche nous demande de modifier le Github Action (GA) pour que l'action écho
 
 7 vulnérabilités, types différents.
 
-CWE-78 (command injection), TesseractOCRParser.java ligne 550. Le check du binaire tesseract fait un `exec()` avec le chemin concaténé direct, sans validation.
+CWE-78 (command injection), TesseractOCRParser.java ligne 550. Le check du binaire tesseract fait un `exec()` avec le chemin concaténé direct, sans validation. Regle semgrep: `command-injection-formatted-runtime-call`.
 
-CWE-330 (aléa faible), même fichier ligne 441. Le nom du fichier de debug OCR est genere avec `new Random()`, pas crypto, donc devinable.
+CWE-330 (aléa faible), même fichier ligne 441. Le nom du fichier de debug OCR est genere avec `new Random()`, pas crypto, donc devinable. Regle: `weak-random`.
 
-CWE-611 (XXE), XFAExtractor.java ligne 176. Si le XFA est corrompu, on retombe sur une factory XML sans protection, ce qui reouvre la porte aux entités externes.
+CWE-611 (XXE), XFAExtractor.java ligne 176. Si le XFA est corrompu, on retombe sur une factory XML sans protection, ce qui reouvre la porte aux entités externes. Regle: `xmlinputfactory-possible-xxe`.
 
-CWE-328 (hash faible), OPCPackageDetector.java ligne 165. Dédup des logs de debug via MD5, facilement cassable.
+CWE-328 (hash faible), OPCPackageDetector.java ligne 165. Dédup des logs de debug via MD5, facilement cassable. Regle: `use-of-md5`.
 
-CWE-798 (credentials en dur), NetworkParser.java ligne 58. Identifiant et mot de passe écrits en clair dans le code, utilisés en fallback.
+CWE-798 (credentials en dur), NetworkParser.java ligne 58. Identifiant et mot de passe écrits en clair dans le code, utilisés en fallback. Regle: `detected-username-and-password-in-uri`.
 
-CWE-295 (cert désactivé), NetworkParser.java lignes 114/117. Le `X509TrustManager` accepte n'importe quel certificat, protection TLS annulée.
+CWE-295 (cert désactivé), NetworkParser.java lignes 114/117. Le `X509TrustManager` accepte n'importe quel certificat, protection TLS annulée. Regle: `insecure-trust-manager`.
 
-CWE-502 (désérialisation), ComponentInstantiator.java ligne 129. Le cache est relu avec `readObject()` sans vérification, exploitable si quelqu'un y dépose un fichier malicieux.
+CWE-502 (désérialisation), ComponentInstantiator.java ligne 129. Le cache est relu avec `readObject()` sans vérification, exploitable si quelqu'un y dépose un fichier malicieux. Regle: `object-deserialization`.
 
-Rapports avant/après dans `semgrep_rapport/`.
+## Avant/après
+
+Avant les 7 ajouts, semgrep trouvait rien de neuf sur ces fichiers (sauf dans core, 3 resultats existaient deja avant, du code Tika d'origine, pas nous). Après, chaque vuln ressort dans le rapport avec sa regle. Rapports complets (avant et après, par module) dans `semgrep_rapport/`.
+
+## Humour
+
+Rickroll si un test échoue dans la build (voir le step `Rickroll` dans `main-jdk17-build.yml`). Et [pour faire bonne mesure](https://youtu.be/dQw4w9WgXcQ).
 
