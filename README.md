@@ -44,19 +44,19 @@ La tâche nous demande de modifier le Github Action (GA) pour que l'action écho
 
 7 vulnérabilités, types différents.
 
-CWE-78 command injection, TesseractOCRParser.java ligne 550. `exec()` avec concaténation non validée.
+CWE-78 (command injection), TesseractOCRParser.java ligne 550. Le check du binaire tesseract fait un `exec()` avec le chemin concaténé direct, sans validation.
 
-CWE-330 weak random, TesseractOCRParser.java ligne 441. Nom de fichier debug genere avec `new Random()`.
+CWE-330 (aléa faible), même fichier ligne 441. Le nom du fichier de debug OCR est genere avec `new Random()`, pas crypto, donc devinable.
 
-CWE-611 XXE, XFAExtractor.java ligne 176. Fallback XML sans protection si le parseur durci echoue.
+CWE-611 (XXE), XFAExtractor.java ligne 176. Si le XFA est corrompu, on retombe sur une factory XML sans protection, ce qui reouvre la porte aux entités externes.
 
-CWE-328 weak hash, OPCPackageDetector.java ligne 165. Dédup via `MessageDigest` MD5.
+CWE-328 (hash faible), OPCPackageDetector.java ligne 165. Dédup des logs de debug via MD5, facilement cassable.
 
-CWE-798 hardcoded creds, NetworkParser.java ligne 58. Identifiant et mot de passe en clair dans le code.
+CWE-798 (credentials en dur), NetworkParser.java ligne 58. Identifiant et mot de passe écrits en clair dans le code, utilisés en fallback.
 
-CWE-295 bad cert validation, NetworkParser.java lignes 114 et 117. `X509TrustManager` qui accepte tout.
+CWE-295 (cert désactivé), NetworkParser.java lignes 114/117. Le `X509TrustManager` accepte n'importe quel certificat, protection TLS annulée.
 
-CWE-502 insecure deserialization, ComponentInstantiator.java ligne 129. Cache lu avec `ObjectInputStream.readObject()`.
+CWE-502 (désérialisation), ComponentInstantiator.java ligne 129. Le cache est relu avec `readObject()` sans vérification, exploitable si quelqu'un y dépose un fichier malicieux.
 
 Rapports avant/après dans `semgrep_rapport/`.
 
