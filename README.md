@@ -40,3 +40,23 @@ La tâche nous demande de modifier le Github Action (GA) pour que l'action écho
 
     Pour les `steps` à suivre, on récupère d'abord tout l'historique git avec `fetch-depth: 0` pour pouvoir que `--baseline-commit` puisse trouver le commit de comparaison plus tard. On exécute ensuite le bloc de code se trouvant dans `name: Trouver le commit de base`. On a besoin de celui-ci puisque sans, on ne peut pas savoir quels sont les problèmes qui existaient déjà dans Tika et ceux que le commit qu'on veut faire ajoute. On exécute ensuite le bloc de code de `Lancer Semgrep` pour pouvoir lancer semgrep et trouver les erreurs que le nouveau commit apporterait. Un rapport est ensuite généré et enregistré dans `semgrep_rapport`. Pour les cas où semgrep échoue, on a quand même `Conserver le rapport` qui enregistre une version du rapport tout le temps.
 
+## Vulnérabilités
+
+7 vulnérabilités, types différents.
+
+CWE-78 command injection, TesseractOCRParser.java ligne 550. `exec()` avec concaténation non validée.
+
+CWE-330 weak random, TesseractOCRParser.java ligne 441. Nom de fichier debug genere avec `new Random()`.
+
+CWE-611 XXE, XFAExtractor.java ligne 176. Fallback XML sans protection si le parseur durci echoue.
+
+CWE-328 weak hash, OPCPackageDetector.java ligne 165. Dédup via `MessageDigest` MD5.
+
+CWE-798 hardcoded creds, NetworkParser.java ligne 58. Identifiant et mot de passe en clair dans le code.
+
+CWE-295 bad cert validation, NetworkParser.java lignes 114 et 117. `X509TrustManager` qui accepte tout.
+
+CWE-502 insecure deserialization, ComponentInstantiator.java ligne 129. Cache lu avec `ObjectInputStream.readObject()`.
+
+Rapports avant/après dans `semgrep_rapport/`.
+
