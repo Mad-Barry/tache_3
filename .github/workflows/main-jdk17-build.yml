@@ -47,6 +47,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg libimage-exiftool-perl
       - name: Build with Maven
         run: mvn clean apache-rat:check test install javadoc:aggregate -Pci -B "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+      - name: Rickroll
+        if: failure()
+        run: |
+          echo "Never gonna give you up, never gonna let you down"
+          echo "![rick](https://img.youtube.com/vi/dQw4w9WgXcQ/0.jpg)" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Never Gonna Give You Up](https://youtu.be/dQw4w9WgXcQ)" >> "$GITHUB_STEP_SUMMARY"
 
   semgrep:
     runs-on: ubuntu-latest
@@ -73,7 +79,8 @@ jobs:
       - name: Lancer Semgrep
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          semgrep scan --config p/java --error \
+          semgrep scan --config p/java --config p/security-audit \
+            --config p/owasp-top-ten --config p/cwe-top-25 --config p/secrets --error \
             --baseline-commit "${{ steps.base.outputs.sha }}" \
             --json-output=semgrep_rapport/semgrep-nouveaux.json .
       - name: Conserver le rapport
@@ -101,3 +108,9 @@ jobs:
           cache: 'maven'
       - name: Run E2E Tests
         run: mvn -pl tika-e2e-tests -am clean verify -Pe2e -B "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+      - name: Rickroll
+        if: failure()
+        run: |
+          echo "Never gonna give you up, never gonna let you down"
+          echo "![rick](https://img.youtube.com/vi/dQw4w9WgXcQ/0.jpg)" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Never Gonna Give You Up](https://youtu.be/dQw4w9WgXcQ)" >> "$GITHUB_STEP_SUMMARY"
